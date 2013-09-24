@@ -3,6 +3,8 @@
 #define JNIEXCEPTION_H_
 
 #include <jni.h>
+
+
 #include <jniobject.h>
 
 #define MESSAGE_MAX 1024

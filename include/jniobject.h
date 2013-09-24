@@ -3,26 +3,76 @@
 #define JNIOBJECT_H_
 
 #include <jni.h>
+#include <string>
+
+class JniString;
+class JniObject;
+
+#include <jnimethod.h>
 
 
 class JniObject {
 
 private:
 	JNIEnv* mEnv;
-	jclass classobj;
+	string mClassname;
+	jobject mInstance;
+
+	jclass mCachedClassObj;
 
 public:
-	const char* classname;
+	
 
 	JniObject(JNIEnv* env, const char* name)
 	: mEnv(env)
-	, classname(name) {}
+	, mClassname(name)
+	{}
+
+	JniObject(JNIEnv* env, jobject instance)
+	: mEnv(env)
+	, mInstance(instance)
+	{
+		JniMethod<jstring()> getName("getName", "()Ljava/lang/String;");
+		JniString className(env, getName());
+		mClassname = &className;
+	}
 
 	jclass getClass() {
-		if(classobj != NULL){
-			classobj = mEnv->FindClass(classname);
+		if(mCachedClassObj != NULL){
+			mCachedClassObj = mEnv->FindClass(mClassname);
 		}
-		return classobj;
+		return mCachedClassObj;
+	}
+};
+
+class JniString {
+private:
+	JNIEnv* env;
+	jstring mString;
+	bool isValid;
+	const jchar* mCachedCharBuf;
+
+public:
+	JniString(JNIEnv* env, jstring str)
+	: mEnv(env)
+	, mString(str)
+	, isValid(false)
+	{}
+
+	~JniString()
+	{
+		if(isValid){
+			mEnv->ReleaseStringChars(mString, mCachedCharBuf);
+			isValid = false;
+		}
+	}
+
+	const char* operator& (){
+		if(!isValid) {
+			mCachedCharBuf = mEnv->GetStringChars(mString, NULL);
+			isValid = true;
+		}
+		return mCachedCharBuf;
 	}
 };
 

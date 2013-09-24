@@ -6,6 +6,8 @@
 #include <jni.h>
 #include <cstdio>
 
+#include <jniexception.h>
+
 template<class T>
 class JniMethod;
 
@@ -13,37 +15,36 @@ class JniMethod;
 class JniMethod_base {
 
 protected:
-	JNIEnv* m_env;
-	jobject m_instance;
-	jmethodID m_cachedMethodID;
 	const char* m_methodName;
 	const char* m_methodSignature;
 
-public:
-	JniMethod_base(){}
+	JNIEnv* m_env;
+	jobject m_instance;
+	jmethodID m_cachedMethodID;
+	
 
-	JniMethod_base(JNIEnv* env, jobject inst, const char* name, const char* sig)
-	: m_env(env),
-	m_instance(inst),
-	m_methodName(name),
-	m_methodSignature(sig),
-	m_cachedMethodID(NULL) {}
+public:
+	JniMethod_base(const char* name, const char* sig)
+	: m_methodName(name)
+	, m_methodSignature(sig)
+	, m_cachedMethodID(NULL)
+	{}
+
+	
+	void setInstance(JNIEnv* env, jobject instance) {
+		m_env = env;
+		m_instance = instance;
+	}
 
 
 	jmethodID getMethodID() {
-		jmethodID retval = m_cachedMethodID;
-		if(retval == NULL) {
-			jmethodID retval = m_env->GetMethodID(getObjectClass(), m_methodName, m_methodSignature);
-			if (retval == NULL) {
-					m_env->ExceptionClear();
-					char w[1024];
-					sprintf(w,"unable to find method %s. (%s)", m_methodName, m_methodSignature );
-					m_env->ThrowNew( m_env->FindClass("java/lang/Error"),w);
-	        }
-	        m_cachedMethodID = retval;
+		if(m_cachedMethodID == NULL){
+			m_cachedMethodID = m_env->GetMethodID(getObjectClass(), m_methodName, m_methodSignature);
+			if(m_cachedMethodID == NULL){
+				JniException::throwErrorNow(m_env, "unable to find method %s. (%s)", m_methodName, m_methodSignature);
+			}
 		}
-
-        return retval;
+		return m_cachedMethodID;
 	}
 
 	jclass getObjectClass() const {
@@ -57,8 +58,7 @@ public:
 #define JniMethod_ACCESSORS(TYPE, NAME_FRAG) \
 template<typename... P> class JniMethod<TYPE(P...)> : public JniMethod_base { \
 	public: \
-	JniMethod() : JniMethod_base() {}; \
-	JniMethod(JNIEnv* env, jobject inst, const char* name, const char* sig) : JniMethod_base(env, inst, name, sig) {} \
+	JniMethod(const char* name, const char* sig) : JniMethod_base(name, sig) {}; \
 	TYPE operator() (P... q) { \
 		return m_env->Call ## NAME_FRAG ## Method(m_instance, getMethodID(), q...); \
 	} \

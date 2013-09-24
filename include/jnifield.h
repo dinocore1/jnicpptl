@@ -15,23 +15,19 @@ template <typename NativeT, bool isStatic>
 class JniField {
     typedef JniField<NativeT, isStatic> Self;
     
-    JNIEnv* m_env;
-    jobject m_instance;
     const char* m_fieldName;
     const char* m_fieldSignature;
+    JNIEnv* m_env;
+    jobject m_instance;
+    
     
 public:
 
-	JniField(){}
-
-    // Creates a proxy for a field.
-    JniField(JNIEnv* env, jobject instance, const char* name, const char* signature)
-    : m_env(env)
-    , m_instance(instance)
-    , m_fieldName(name)
+	JniField(const char* name, const char* signature)
+    : m_fieldName(name)
     , m_fieldSignature(signature)
-    {
-    }
+    {}
+
     
     Self& operator=(const NativeT& rhs) {
         set(rhs);
