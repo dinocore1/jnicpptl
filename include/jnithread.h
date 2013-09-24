@@ -30,4 +30,36 @@ public:
 
 };
 
+class JNIMonitor {
+private:
+	JNIEnv* mEnv;
+	jobject mObj;
+	bool isLocked;
+
+public:
+	JNIMonitor(JNIEnv* env, jobject jobj)
+	: mEnv(env),
+	isLocked(false),
+	mObj(jobj) {
+		lock();
+	}
+
+	~JNIMonitor() {
+		unlock();
+	}
+
+	void lock() {
+		if(!isLocked){
+			mEnv->MonitorEnter(mObj);
+		}
+	}
+
+	void unlock() {
+		if(isLocked){
+			mEnv->MonitorExit(mObj);
+		}
+	}
+
+};
+
 #endif /* JNITHREAD_H_ */

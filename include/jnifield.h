@@ -5,6 +5,7 @@
 
 #include <jni.h>
 #include <cstdio>
+#include <jniexception.h>
 
 
 /**
@@ -42,6 +43,10 @@ public:
         get(result);
         return result;
     }
+
+    jobject getInstance() {
+        return m_instance;
+    }
     
 private:
     void get(NativeT&) const;
@@ -54,9 +59,8 @@ private:
         	: m_env->GetFieldID(getObjectClass(), m_fieldName, m_fieldSignature);
         if (result == 0) {
 				m_env->ExceptionClear();
-				char w[1024];
-				sprintf(w,"unable to find %s. (%s)", m_fieldName, m_fieldSignature );
-				m_env->ThrowNew( m_env->FindClass("java/lang/Error"),w);
+                JniException::throwErrorNow(m_env, "unable to find %s. (%s)", m_fieldName, m_fieldSignature);
+				
         }
         return result;
     }
