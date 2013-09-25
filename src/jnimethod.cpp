@@ -7,6 +7,8 @@
 JniMethod_base::JniMethod_base(JniObject* instanceProxy, const char* name, const char* sig)
  : m_methodName(name)
  , m_methodSignature(sig)
+ , mEnv(NULL)
+ , mInstance(NULL)
  , mCachedMethodID(NULL)
  , mInstanceProxy(instanceProxy)
 {

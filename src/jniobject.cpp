@@ -2,20 +2,28 @@
 #include <jnicpptl/jniobject.h>
 #include <jnicpptl/jnimethod.h>
 
-JniObject::JniObject(JNIEnv* env, const char* name)
- : mEnv(env)
- , mClassname(name)
+JniObject::JniObject(const char* name)
+ : mClassname(name)
+ , mEnv(NULL)
+ , mInstance(NULL)
+ , mCachedClassObj(NULL)
 {
-
 }
 
-JniObject::JniObject(JNIEnv* env, jobject instance)
- : mEnv(env)
+JniObject::JniObject(const char* name, JNIEnv* env, jobject instance)
+ : mClassname(name)
+ , mEnv(env)
  , mInstance(instance)
+ , mCachedClassObj(NULL)
+{
+}
+
+const JniObject& makeJniObject(JNIEnv* env, jobject instance)
 {
 	JniMethod<jstring()> getName("getName", "()Ljava/lang/String;");
 	JniString className(env, getName());
-	mClassname = &className;
+
+	JniObject retval(className, env, instance);
 }
 
 jclass JniObject::getClass()

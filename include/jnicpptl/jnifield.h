@@ -4,6 +4,7 @@
 #define JNIFIELD_H_
 
 #include <jni.h>
+#include <string>
 
 class JniObject;
 
@@ -24,9 +25,18 @@ public:
     JniField_base(const char* name, const char* signature)
     : mFieldName(name)
     , mFieldSignature(signature)
+    , mEnv(NULL)
+    , mInstance(NULL)
+    , mInstanceProxy(NULL)
     {}
 
-    JniField_base(JniObject* proxy, const char* name, const char* signature);
+    JniField_base(JniObject* proxy, const char* name, const char* signature)
+    : mFieldName(name)
+    , mFieldSignature(signature)
+    , mEnv(NULL)
+    , mInstance(NULL)
+    , mInstanceProxy(proxy)
+    {}
 
     void setInstance(JNIEnv* env, jobject instance) {
         mEnv = env;
@@ -52,100 +62,19 @@ public:
     : JniField_base<isStatic>(proxy, name, signature)
     {}
 
-    const T& get();
-    SelfT& operator=(const T& rhs);
-    operator T();  
+    T get();
+    void set(T t);
 
-};
-
-/*
-
-template <typename NativeT, bool isStatic>
-class JniField {
-    typedef JniField<NativeT, isStatic> Self;
-    
-    const char* m_fieldName;
-    const char* m_fieldSignature;
-
-    JNIEnv* mEnv;
-    jobject mInstance;
-    
-    
-public:
-
-	JniField(const char* name, const char* signature)
-    : m_fieldName(name)
-    , m_fieldSignature(signature)
-    {}
-
-    JniField()
-
-    
-    Self& operator=(const NativeT& rhs) {
+    SelfT& operator=(const T& rhs) {
         set(rhs);
         return *this;
     }
-    
-    NativeT get() const {
-        NativeT result;
-        get(result);
-        return result;
+
+    operator T() {
+        return get();
     }
 
-    jobject getInstance() {
-        return mInstance;
-    }
-    
-private:
-    void get(NativeT&) const;
-    void set(const NativeT&);
-    
-    jfieldID getFieldID() const {
-        // It's not a valid optimization to cache field ids in face of class unloading.
-        // We could keep a global reference to the class to prevent it being unloaded, but that seems unfriendly.
-        jfieldID result = isStatic ? mEnv->GetStaticFieldID(getObjectClass(), m_fieldName, m_fieldSignature) 
-        	: mEnv->GetFieldID(getObjectClass(), m_fieldName, m_fieldSignature);
-        if (result == 0) {
-				mEnv->ExceptionClear();
-                JniException::throwErrorNow(mEnv, "unable to find %s. (%s)", m_fieldName, m_fieldSignature);
-				
-        }
-        return result;
-    }
-    
-    jclass getObjectClass() const {
-        // The JNI specification (http://java.sun.com/j2se/1.5.0/docs/guide/jni/spec/functions.html) suggests that GetObjectClass can't fail, so we don't need to check for exceptions.
-        return mEnv->GetObjectClass(mInstance);
-    }
 };
 
-#define JniField_ACCESSORS(TYPE, FUNCTION_NAME_FRAGMENT) \
-    template <> void JniField<TYPE, true>::set(const TYPE& rhs) { \
-        mEnv->SetStatic ## FUNCTION_NAME_FRAGMENT ## Field(getObjectClass(), getFieldID(), rhs); \
-    } \
-    template <> void JniField<TYPE, false>::set(const TYPE& rhs) { \
-        mEnv->Set ## FUNCTION_NAME_FRAGMENT ## Field(mInstance, getFieldID(), rhs); \
-    } \
-    template <> void JniField<TYPE, true>::get(TYPE& result) const { \
-        result = (TYPE) mEnv->GetStatic ## FUNCTION_NAME_FRAGMENT ## Field(getObjectClass(), getFieldID()); \
-    } \
-    template <> void JniField<TYPE, false>::get(TYPE& result) const { \
-        result = (TYPE) mEnv->Get ## FUNCTION_NAME_FRAGMENT ## Field(mInstance, getFieldID()); \
-    }
-
-JniField_ACCESSORS(jstring, Object)
-JniField_ACCESSORS(jobject, Object)
-JniField_ACCESSORS(jboolean, Boolean)
-JniField_ACCESSORS(jbyte, Byte)
-JniField_ACCESSORS(jchar, Char)
-JniField_ACCESSORS(jshort, Short)
-JniField_ACCESSORS(jint, Int)
-JniField_ACCESSORS(jlong, Long)
-JniField_ACCESSORS(jfloat, Float)
-JniField_ACCESSORS(jdouble, Double)
-
-#undef JniField_ACCESSORS
-
-*/
 
 #endif /* JNIFIELD_H_ */

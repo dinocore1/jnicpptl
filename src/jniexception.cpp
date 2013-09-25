@@ -29,7 +29,7 @@ void throwErrorNow(JNIEnv* env, const char* fmt, ...)
 {
 	va_list args;
 	va_start (args, fmt);
-	JniObject obj(env, "java/lang/Error");
+	JniObject obj("java/lang/Error", env, NULL);
 	throwNow(env, obj, fmt, args);
 	va_end(args);
 }

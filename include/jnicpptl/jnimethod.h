@@ -29,7 +29,10 @@ public:
 	JniMethod_base(const char* name, const char* sig)
 	: m_methodName(name)
 	, m_methodSignature(sig)
-	, mCachedMethodID(NULL)
+	, mEnv(NULL)
+ 	, mInstance(NULL)
+ 	, mCachedMethodID(NULL)
+ 	, mInstanceProxy(NULL)
 	{}
 
 	JniMethod_base(JniObject* instanceProxy, const char* name, const char* sig);

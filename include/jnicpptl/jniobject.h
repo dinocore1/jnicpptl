@@ -10,15 +10,15 @@
 class JniObject {
 
 private:
-	JNIEnv* mEnv;
 	std::string mClassname;
+	JNIEnv* mEnv;
 	jobject mInstance;
 
 	jclass mCachedClassObj;
 
 public:
-	JniObject(JNIEnv* env, const char* name);
-	JniObject(JNIEnv* env, jobject instance);
+	JniObject(const char* name);
+	JniObject(const char* name, JNIEnv* env, jobject instance);
 
 	JNIEnv* getJNIEnv() {
 		return mEnv;
@@ -28,8 +28,15 @@ public:
 		return mInstance;
 	}
 
+	operator jobject () {
+		return getInstance();
+	}
+
 	jclass getClass();
 };
+
+const JniObject& makeJniObject(JNIEnv* env, jobject instance);
+
 
 class JniString {
 private:
@@ -53,13 +60,18 @@ public:
 		}
 	}
 
-	const char* operator& (){
+	const char* get() {
 		if(!isValid) {
 			mCachedCharBuf = mEnv->GetStringUTFChars(mString, NULL);
 			isValid = true;
 		}
 		return mCachedCharBuf;
 	}
+
+	operator const char*() {
+		return get();
+	}
+
 };
 
 
