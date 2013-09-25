@@ -5,20 +5,25 @@
 #include <jni.h>
 #include <string>
 
-
+template <class T>
+class JniMethod;
 
 class JniObject {
 
-private:
-	std::string mClassname;
+protected:
 	JNIEnv* mEnv;
 	jobject mInstance;
 
+private:
+	std::string mClassname;
 	jclass mCachedClassObj;
 
 public:
 	JniObject(const char* name);
 	JniObject(const char* name, JNIEnv* env, jobject instance);
+
+	//template<class T>
+	//JniObject(const char* name, JNIEnv* env, const JniMethod<T> &constructor);
 
 	JNIEnv* getJNIEnv() {
 		return mEnv;
@@ -38,38 +43,42 @@ public:
 const JniObject& makeJniObject(JNIEnv* env, jobject instance);
 
 
-class JniString {
+class JniString : public JniObject {
 private:
-	JNIEnv* mEnv;
-	jstring mString;
-	bool isValid;
-	const char* mCachedCharBuf;
+	std::string mNativeString;
 
 public:
 	JniString(JNIEnv* env, jstring str)
-	: mEnv(env)
-	, mString(str)
-	, isValid(false)
-	{}
-
-	~JniString()
+	: JniObject("java/lang/String", env, (jobject)str)
 	{
-		if(isValid){
-			mEnv->ReleaseStringUTFChars(mString, mCachedCharBuf);
-			isValid = false;
-		}
+		const char* buf = mEnv->GetStringUTFChars(str, NULL);
+		mNativeString = buf;
+		mEnv->ReleaseStringUTFChars(str, buf);
 	}
 
-	const char* get() {
-		if(!isValid) {
-			mCachedCharBuf = mEnv->GetStringUTFChars(mString, NULL);
-			isValid = true;
-		}
-		return mCachedCharBuf;
+	JniString(JNIEnv* env, const char* buf)
+	: JniObject("java/lang/String")
+	{
+		mEnv = env;
+		mNativeString = buf;
+		mInstance = (jobject)env->NewStringUTF(buf);
+		
+	}
+
+	const char* getCStr() {
+		return mNativeString.c_str();
+	}
+
+	jstring getJString() {
+		return (jstring)mInstance;
 	}
 
 	operator const char*() {
-		return get();
+		return getCStr();
+	}
+
+	operator jstring() {
+		return getJString();
 	}
 
 };

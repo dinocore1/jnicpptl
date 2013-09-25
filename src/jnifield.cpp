@@ -73,8 +73,9 @@ void JniField<TYPE, true>::set(TYPE t) { \
 	getJNIEnv()->SetStatic ## NAME_FRAGMENT ## Field(getClass(), getFieldID(), t); \
 }
 
-JniField_ACCESSORS(jstring, Object)
 JniField_ACCESSORS(jobject, Object)
+JniField_ACCESSORS(jstring, Object)
+JniField_ACCESSORS(jclass, Object)
 JniField_ACCESSORS(jboolean, Boolean)
 JniField_ACCESSORS(jbyte, Byte)
 JniField_ACCESSORS(jchar, Char)

@@ -67,6 +67,7 @@ template<typename... P> class JniMethod<TYPE(P...)> : public JniMethod_base { \
 JniMethod_ACCESSORS(void, Void)
 JniMethod_ACCESSORS(jstring, Object)
 JniMethod_ACCESSORS(jobject, Object)
+JniMethod_ACCESSORS(jclass, Object)
 JniMethod_ACCESSORS(jboolean, Boolean)
 JniMethod_ACCESSORS(jbyte, Byte)
 JniMethod_ACCESSORS(jchar, Char)
@@ -76,7 +77,7 @@ JniMethod_ACCESSORS(jlong, Long)
 JniMethod_ACCESSORS(jfloat, Float)
 JniMethod_ACCESSORS(jdouble, Double)
 
-
+#undef JniMethod_ACCESSORS
 
 
 #endif /* JNIMETHOD_H_ */

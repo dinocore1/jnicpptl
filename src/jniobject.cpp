@@ -18,6 +18,18 @@ JniObject::JniObject(const char* name, JNIEnv* env, jobject instance)
 {
 }
 
+/*
+template<class T>
+JniObject::JniObject(const char* name, JNIEnv* env, const JniMethod<T> &constructor)
+ : mClassname(name)
+ , mEnv(env)
+ , mInstance(NULL)
+ , mCachedClassObj(NULL)
+{
+
+}
+*/
+
 const JniObject& makeJniObject(JNIEnv* env, jobject instance)
 {
 	JniMethod<jstring()> getName("getName", "()Ljava/lang/String;");
@@ -28,8 +40,12 @@ const JniObject& makeJniObject(JNIEnv* env, jobject instance)
 
 jclass JniObject::getClass()
 {
-	if(mCachedClassObj != NULL){
-		mCachedClassObj = mEnv->FindClass(mClassname.c_str());
+	if(mCachedClassObj == NULL){
+		if(mInstance != NULL){
+			mCachedClassObj = mEnv->GetObjectClass(mInstance);
+		} else {
+			mCachedClassObj = mEnv->FindClass(mClassname.c_str());
+		}
 	}
 	return mCachedClassObj;
 }
