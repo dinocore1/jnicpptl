@@ -4,21 +4,71 @@
 #define JNIFIELD_H_
 
 #include <jni.h>
-#include <cstdio>
-#include <jniexception.h>
 
+class JniObject;
 
-/**
- * Hides the details of accessing Java fields via JNI.
- */
+template<bool isStatic>
+class JniField_base {
+
+protected:
+    const char* mFieldName;
+    const char* mFieldSignature;
+
+    JNIEnv* mEnv;
+    jobject mInstance;
+    jfieldID mCachedFieldID;
+
+    JniObject* mInstanceProxy;
+
+public:
+    JniField_base(const char* name, const char* signature)
+    : mFieldName(name)
+    , mFieldSignature(signature)
+    {}
+
+    JniField_base(JniObject* proxy, const char* name, const char* signature);
+
+    void setInstance(JNIEnv* env, jobject instance) {
+        mEnv = env;
+        mInstance = instance;
+    }
+
+    JNIEnv* getJNIEnv();
+    jclass getClass();
+    jobject getInstance();
+    jfieldID getFieldID();
+};
+
+template<typename T, bool isStatic>
+class JniField : public JniField_base<isStatic> {
+    typedef JniField<T, isStatic> SelfT;
+
+public:
+    JniField(const char* name, const char* signature)
+    : JniField_base<isStatic>(name, signature)
+    {}
+
+    JniField(JniObject* proxy, const char* name, const char* signature)
+    : JniField_base<isStatic>(proxy, name, signature)
+    {}
+
+    const T& get();
+    SelfT& operator=(const T& rhs);
+    operator T();  
+
+};
+
+/*
+
 template <typename NativeT, bool isStatic>
 class JniField {
     typedef JniField<NativeT, isStatic> Self;
     
     const char* m_fieldName;
     const char* m_fieldSignature;
-    JNIEnv* m_env;
-    jobject m_instance;
+
+    JNIEnv* mEnv;
+    jobject mInstance;
     
     
 public:
@@ -27,6 +77,8 @@ public:
     : m_fieldName(name)
     , m_fieldSignature(signature)
     {}
+
+    JniField()
 
     
     Self& operator=(const NativeT& rhs) {
@@ -41,7 +93,7 @@ public:
     }
 
     jobject getInstance() {
-        return m_instance;
+        return mInstance;
     }
     
 private:
@@ -51,11 +103,11 @@ private:
     jfieldID getFieldID() const {
         // It's not a valid optimization to cache field ids in face of class unloading.
         // We could keep a global reference to the class to prevent it being unloaded, but that seems unfriendly.
-        jfieldID result = isStatic ? m_env->GetStaticFieldID(getObjectClass(), m_fieldName, m_fieldSignature) 
-        	: m_env->GetFieldID(getObjectClass(), m_fieldName, m_fieldSignature);
+        jfieldID result = isStatic ? mEnv->GetStaticFieldID(getObjectClass(), m_fieldName, m_fieldSignature) 
+        	: mEnv->GetFieldID(getObjectClass(), m_fieldName, m_fieldSignature);
         if (result == 0) {
-				m_env->ExceptionClear();
-                JniException::throwErrorNow(m_env, "unable to find %s. (%s)", m_fieldName, m_fieldSignature);
+				mEnv->ExceptionClear();
+                JniException::throwErrorNow(mEnv, "unable to find %s. (%s)", m_fieldName, m_fieldSignature);
 				
         }
         return result;
@@ -63,22 +115,22 @@ private:
     
     jclass getObjectClass() const {
         // The JNI specification (http://java.sun.com/j2se/1.5.0/docs/guide/jni/spec/functions.html) suggests that GetObjectClass can't fail, so we don't need to check for exceptions.
-        return m_env->GetObjectClass(m_instance);
+        return mEnv->GetObjectClass(mInstance);
     }
 };
 
 #define JniField_ACCESSORS(TYPE, FUNCTION_NAME_FRAGMENT) \
     template <> void JniField<TYPE, true>::set(const TYPE& rhs) { \
-        m_env->SetStatic ## FUNCTION_NAME_FRAGMENT ## Field(getObjectClass(), getFieldID(), rhs); \
+        mEnv->SetStatic ## FUNCTION_NAME_FRAGMENT ## Field(getObjectClass(), getFieldID(), rhs); \
     } \
     template <> void JniField<TYPE, false>::set(const TYPE& rhs) { \
-        m_env->Set ## FUNCTION_NAME_FRAGMENT ## Field(m_instance, getFieldID(), rhs); \
+        mEnv->Set ## FUNCTION_NAME_FRAGMENT ## Field(mInstance, getFieldID(), rhs); \
     } \
     template <> void JniField<TYPE, true>::get(TYPE& result) const { \
-        result = (TYPE) m_env->GetStatic ## FUNCTION_NAME_FRAGMENT ## Field(getObjectClass(), getFieldID()); \
+        result = (TYPE) mEnv->GetStatic ## FUNCTION_NAME_FRAGMENT ## Field(getObjectClass(), getFieldID()); \
     } \
     template <> void JniField<TYPE, false>::get(TYPE& result) const { \
-        result = (TYPE) m_env->Get ## FUNCTION_NAME_FRAGMENT ## Field(m_instance, getFieldID()); \
+        result = (TYPE) mEnv->Get ## FUNCTION_NAME_FRAGMENT ## Field(mInstance, getFieldID()); \
     }
 
 JniField_ACCESSORS(jstring, Object)
@@ -94,6 +146,6 @@ JniField_ACCESSORS(jdouble, Double)
 
 #undef JniField_ACCESSORS
 
-
+*/
 
 #endif /* JNIFIELD_H_ */

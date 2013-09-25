@@ -6,7 +6,7 @@
 #include <jni.h>
 #include <cstdio>
 
-#include <jniexception.h>
+class JniObject;
 
 template<class T>
 class JniMethod;
@@ -18,39 +18,34 @@ protected:
 	const char* m_methodName;
 	const char* m_methodSignature;
 
-	JNIEnv* m_env;
-	jobject m_instance;
-	jmethodID m_cachedMethodID;
+	JNIEnv* mEnv;
+	jobject mInstance;
+	jmethodID mCachedMethodID;
+
+	JniObject* mInstanceProxy;
 	
 
 public:
 	JniMethod_base(const char* name, const char* sig)
 	: m_methodName(name)
 	, m_methodSignature(sig)
-	, m_cachedMethodID(NULL)
+	, mCachedMethodID(NULL)
 	{}
+
+	JniMethod_base(JniObject* instanceProxy, const char* name, const char* sig);
 
 	
 	void setInstance(JNIEnv* env, jobject instance) {
-		m_env = env;
-		m_instance = instance;
+		mEnv = env;
+		mInstance = instance;
 	}
 
 
-	jmethodID getMethodID() {
-		if(m_cachedMethodID == NULL){
-			m_cachedMethodID = m_env->GetMethodID(getObjectClass(), m_methodName, m_methodSignature);
-			if(m_cachedMethodID == NULL){
-				JniException::throwErrorNow(m_env, "unable to find method %s. (%s)", m_methodName, m_methodSignature);
-			}
-		}
-		return m_cachedMethodID;
-	}
+	JNIEnv* getJNIEnv();
+	jclass getClass();
+	jobject getInstance();
+	jmethodID getMethodID();
 
-	jclass getObjectClass() const {
-        return m_env->GetObjectClass(m_instance);
-    }	
-	
 };
 
 
@@ -59,8 +54,9 @@ public:
 template<typename... P> class JniMethod<TYPE(P...)> : public JniMethod_base { \
 	public: \
 	JniMethod(const char* name, const char* sig) : JniMethod_base(name, sig) {}; \
+	JniMethod(JniObject* proxy, const char* name, const char* sig) : JniMethod_base(proxy, name, sig) {}; \
 	TYPE operator() (P... q) { \
-		return m_env->Call ## NAME_FRAG ## Method(m_instance, getMethodID(), q...); \
+		return (TYPE)getJNIEnv()->Call ## NAME_FRAG ## Method(getInstance(), getMethodID(), q...); \
 	} \
 };
 
