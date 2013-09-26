@@ -61,7 +61,11 @@ template<typename... P> class JniMethod<TYPE(P...)> : public JniMethod_base { \
 	TYPE operator() (P... q) { \
 		return (TYPE)getJNIEnv()->Call ## NAME_FRAG ## Method(getInstance(), getMethodID(), q...); \
 	} \
+	static TYPE invoke(JNIEnv* env, jobject instance, jmethodID methodId, P... q) { \
+		return (TYPE)env->Call ## NAME_FRAG ## Method(instance, methodId, q...); \
+	} \
 };
+
 
 
 JniMethod_ACCESSORS(void, Void)

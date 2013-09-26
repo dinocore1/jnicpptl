@@ -64,4 +64,57 @@ public:
 
 };
 
+class JniLocalFrame {
+private:
+	JNIEnv* mEnv;
+	jobject* returnObj;
+
+public:
+	JniLocalFrame(JNIEnv* env, int numRefs)
+	: mEnv(env)
+	, returnObj(NULL) {
+		mEnv->PushLocalFrame(numRefs);
+	}
+
+	~JniLocalFrame() {
+		mEnv->PopLocalFrame(NULL);
+	}
+
+
+
+};
+
+class JniGlobalRef {
+private:
+	JNIEnv* mEnv;
+	jobject instance;
+
+public:
+	JniGlobalRef()
+	: mEnv(NULL)
+	, instance(NULL) {}
+
+	JniGlobalRef(JNIEnv* env, jobject ref)
+	: mEnv(env) {
+		instance = env->NewGlobalRef(ref);
+	}
+
+	~JniGlobalRef() {
+		if(mEnv != NULL && instance != NULL) {
+			mEnv->DeleteGlobalRef(instance);
+		}
+	}
+
+	JniGlobalRef& operator=(JniGlobalRef other) {
+		std::swap(mEnv, other.mEnv);
+		std::swap(instance, other.instance);
+		return *this;
+	}
+
+	operator const jobject& () {
+		return instance;
+	}
+
+};
+
 #endif /* JNITHREAD_H_ */
