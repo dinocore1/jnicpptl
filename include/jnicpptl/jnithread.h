@@ -51,12 +51,14 @@ public:
 	void lock() {
 		if(!isLocked){
 			mEnv->MonitorEnter(mObj);
+			isLocked = true;
 		}
 	}
 
 	void unlock() {
 		if(isLocked){
 			mEnv->MonitorExit(mObj);
+			isLocked = false;
 		}
 	}
 

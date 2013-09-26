@@ -27,6 +27,7 @@ public:
     , mFieldSignature(signature)
     , mEnv(NULL)
     , mInstance(NULL)
+    , mCachedFieldID(NULL)
     , mInstanceProxy(NULL)
     {}
 
@@ -35,6 +36,7 @@ public:
     , mFieldSignature(signature)
     , mEnv(NULL)
     , mInstance(NULL)
+    , mCachedFieldID(NULL)
     , mInstanceProxy(proxy)
     {}
 
