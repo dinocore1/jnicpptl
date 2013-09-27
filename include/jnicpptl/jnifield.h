@@ -72,7 +72,7 @@ public:
         return *this;
     }
 
-    operator T() {
+    operator const T() {
         return get();
     }
 

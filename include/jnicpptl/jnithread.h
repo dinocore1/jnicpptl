@@ -84,19 +84,21 @@ public:
 
 };
 
+template<class T>
 class JniGlobalRef {
 private:
-	JNIEnv* mEnv;
-	jobject instance;
+	T instance;
 
 public:
+	JNIEnv* mEnv;
+
 	JniGlobalRef()
 	: mEnv(NULL)
 	, instance(NULL) {}
 
-	JniGlobalRef(JNIEnv* env, jobject ref)
+	JniGlobalRef(JNIEnv* env, T ref)
 	: mEnv(env) {
-		instance = env->NewGlobalRef(ref);
+		instance = (T)env->NewGlobalRef(ref);
 	}
 
 	~JniGlobalRef() {
@@ -111,7 +113,7 @@ public:
 		return *this;
 	}
 
-	operator const jobject& () {
+	operator const T& () {
 		return instance;
 	}
 
