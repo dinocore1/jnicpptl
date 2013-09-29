@@ -6,77 +6,101 @@
 #include <jni.h>
 #include <string>
 
-class JniObject;
+class JniProxy;
 
-template<bool isStatic>
-class JniField_base {
+template<typename T>
+T JniGetStaticField(JNIEnv* env, jclass clazz, jfieldID field);
 
-protected:
-    const char* mFieldName;
-    const char* mFieldSignature;
+template<typename T>
+void JniSetStaticField(JNIEnv* env, jclass clazz, jfieldID field, T value);
 
-    JNIEnv* mEnv;
-    jobject mInstance;
-    jfieldID mCachedFieldID;
+template<typename T>
+T JniGetField(JNIEnv* env, jobject obj, jfieldID field);
 
-    JniObject* mInstanceProxy;
+template<typename T>
+void JniSetField(JNIEnv* env, jobject obj, jfieldID field, T value);
 
-public:
-    JniField_base(const char* name, const char* signature)
-    : mFieldName(name)
-    , mFieldSignature(signature)
-    , mEnv(NULL)
-    , mInstance(NULL)
-    , mCachedFieldID(NULL)
-    , mInstanceProxy(NULL)
-    {}
 
-    JniField_base(JniObject* proxy, const char* name, const char* signature)
-    : mFieldName(name)
-    , mFieldSignature(signature)
-    , mEnv(NULL)
-    , mInstance(NULL)
-    , mCachedFieldID(NULL)
-    , mInstanceProxy(proxy)
-    {}
-
-    void setInstance(JNIEnv* env, jobject instance) {
-        mEnv = env;
-        mInstance = instance;
-    }
-
-    JNIEnv* getJNIEnv();
-    jclass getClass();
-    jobject getInstance();
-    jfieldID getFieldID();
-};
 
 template<typename T, bool isStatic>
-class JniField : public JniField_base<isStatic> {
-    typedef JniField<T, isStatic> SelfT;
+class JniField_base;
+
+template<typename T>
+class JniField_base<T, false> {
+protected:
+	std::string mFieldName;
+	std::string mFieldSignature;
+	jfieldID mFieldID;
 
 public:
-    JniField(const char* name, const char* signature)
-    : JniField_base<isStatic>(name, signature)
-    {}
+	JniField_base(const char* name, const char* signature)
+	: mFieldName(name)
+	, mFieldSignature(signature)
+	, mFieldID(NULL)
+	{}
 
-    JniField(JniObject* proxy, const char* name, const char* signature)
-    : JniField_base<isStatic>(proxy, name, signature)
-    {}
+	jfieldID getFieldID(JNIEnv* env, jclass clazz);
 
-    T get();
-    void set(T t);
-
-    SelfT& operator=(const T& rhs) {
-        set(rhs);
-        return *this;
-    }
-
-    operator const T() {
-        return get();
-    }
-
+	T get(JNIEnv* env, jobject obj);
+	void set(JNIEnv* env, jobject obj, T value);
 };
+
+template<typename T>
+class JniField_base<T, true>{
+
+protected:
+	std::string mFieldName;
+	std::string mFieldSignature;
+	jfieldID mFieldID;
+
+public:
+	JniField_base(const char* name, const char* signature)
+	: mFieldName(name)
+	, mFieldSignature(signature)
+	, mFieldID(NULL)
+	{}
+
+	jfieldID getFieldID(JNIEnv* env, jclass clazz);
+
+	T get(JNIEnv* env, jclass clazz);
+	void set(JNIEnv* env, jclass obj, T value);
+};
+
+
+template<typename T, bool isStatic>
+class JniField : JniField_base<T, isStatic> {
+	typedef JniField<T, isStatic> SelfT;
+
+protected:
+	JniProxy* mProxy;
+
+public:
+	JniField(const char* name, const char* signature)
+	: JniField_base<T, isStatic>(name, signature)
+	, mProxy(NULL)
+	{}
+
+	JniField(JniProxy* proxy, const char* name, const char* sig)
+	: JniField_base<T, isStatic>(name, sig)
+	, mProxy(proxy)
+	{}
+
+	jfieldID getFieldID();
+
+	T get();
+	void set(T t);
+
+	SelfT& operator=(const T& rhs) {
+		set(rhs);
+		return *this;
+	}
+
+	operator const T() {
+		return get();
+	}
+};
+
+
 
 
 #endif /* JNIFIELD_H_ */

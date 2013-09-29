@@ -5,84 +5,82 @@
 #include <jni.h>
 #include <string>
 
-template <class T>
-class JniMethod;
 
 template<class T>
 class JniObject_base {
 protected:
-	JNIEnv* mEnv;
+	std::string mClassname;
 	T mInstance;
 
-private:
-	std::string mClassname;
-
 public:
-	JniObject_base(const char* name)
-	: mEnv(NULL)
- 	, mInstance(NULL)
- 	, mClassname(name)
-	{}
-
-	JniObject_base(const char* name, JNIEnv* env, T instance)
-	: mEnv(env)
+	JniObject_base(const char* name, T instance)
+	: mClassname(name)
 	, mInstance(instance)
-	, mClassname(name)
 	{}
 
+	JniObject_base(const char* name)
+	: mClassname(name)
+	, mInstance(NULL)
+	{}
 
-
-	~JniObject_base() {
-		if(mEnv != NULL && mInstance != NULL) {
-			mEnv->DeleteLocalRef(mInstance);
-		}
-	}
-
-
-
-	JNIEnv* getJNIEnv() {
-		return mEnv;
-	}
-
-	const char* getClassname() {
-		return mClassname.c_str();
-	}
-
-	const T& getInstance() {
+	const T get() {
 		return mInstance;
 	}
 
-	operator const T& () {
-		return getInstance();
+	void set(const T& i) {
+		mInstance = i;
+	}
+
+	operator const T () {
+		return get();
+	}
+
+	JniObject_base<T>& operator= (const T& rhs) {
+		set(rhs);
+		return *this;
 	}
 };
 
+class JniClass : public JniObject_base<jclass> {
+
+public:
+	JniClass(const char* name, jclass instance)
+	: JniObject_base<jclass>(name, instance)
+	{}
+
+	JniClass(const char* name)
+	: JniObject_base<jclass>(name, NULL)
+	{}
+};
 
 class JniObject : public JniObject_base<jobject> {
 
-private:
-	jclass mCachedClassObj;
+protected:
+	JniClass mClass;
 
 public:
+	JniObject(const char* name, jobject instance)
+	: JniObject_base<jobject>(name, instance)
+	, mClass(name)
+	{}
+
 	JniObject(const char* name)
-	: JniObject_base<jobject>(name)
-	, mCachedClassObj(NULL)
-	{};
+	: JniObject_base<jobject>(name, NULL)
+	, mClass(name)
+	{}
 
-	JniObject(const char* name, JNIEnv* env, jobject instance)
-	: JniObject_base<jobject>(name, env, instance)
-	, mCachedClassObj(NULL)
-	{};
-
-	jclass getClass() {
-		if(mCachedClassObj == NULL){
-			if(mInstance != NULL){
-				mCachedClassObj = mEnv->GetObjectClass(mInstance);
+	jclass getClass(JNIEnv* env) {
+		jclass retval = mClass.get();
+		if(retval == NULL){
+			if(mInstance != NULL) {
+				retval = env->GetObjectClass(mInstance);
+				mClass.set(retval);
 			} else {
-				mCachedClassObj = mEnv->FindClass(getClassname());
+				retval = env->FindClass(mClassname.c_str());
+				mClass.set(retval);
 			}
 		}
-		return mCachedClassObj;
+		return retval;
 	}
 };
 
@@ -96,26 +94,23 @@ private:
 
 public:
 	JniString(JNIEnv* env, jstring str)
-	: JniObject_base("java/lang/String", env, str)
+	: JniObject_base("java/lang/String", str)
 	{
-		const char* buf = mEnv->GetStringUTFChars(str, NULL);
+		const char* buf = env->GetStringUTFChars(str, NULL);
 		mNativeString = buf;
-		mEnv->ReleaseStringUTFChars(str, buf);
+		env->ReleaseStringUTFChars(str, buf);
 	}
 
 	JniString(JNIEnv* env, const char* buf)
 	: JniObject_base("java/lang/String")
+	, mNativeString(buf)
 	{
-		mEnv = env;
-		mNativeString = buf;
 		mInstance = env->NewStringUTF(buf);
-		
 	}
 
 	const char* getCStr() {
 		return mNativeString.c_str();
 	}
-
 
 	operator const char*() {
 		return getCStr();

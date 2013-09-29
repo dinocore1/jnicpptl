@@ -21,7 +21,7 @@ void throwNow(JNIEnv* env, const jclass &exceptionclass, const char* fmt, ...)
 
 void throwNow(JNIEnv* env, JniObject &type, const char* fmt, va_list arg)
 {
-	throwNow(env, type.getClass(), fmt, arg);	
+	throwNow(env, type.getClass(env), fmt, arg);
 }
 
 
@@ -29,7 +29,7 @@ void throwErrorNow(JNIEnv* env, const char* fmt, ...)
 {
 	va_list args;
 	va_start (args, fmt);
-	JniObject obj("java/lang/Error", env, NULL);
+	JniObject obj("java/lang/Error", NULL);
 	throwNow(env, obj, fmt, args);
 	va_end(args);
 }

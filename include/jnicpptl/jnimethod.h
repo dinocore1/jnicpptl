@@ -4,69 +4,91 @@
 #define JNIMETHOD_H_
 
 #include <jni.h>
-#include <cstdio>
+#include <string>
 
+class JniClass;
 class JniObject;
-
-template<class T>
-class JniMethod;
 
 
 class JniMethod_base {
 
 protected:
-	const char* m_methodName;
-	const char* m_methodSignature;
-
-	JNIEnv* mEnv;
-	jobject mInstance;
+	const std::string mMethodName;
+	const std::string mMethodSignature;
 	jmethodID mCachedMethodID;
-
-	JniObject* mInstanceProxy;
-	
 
 public:
 	JniMethod_base(const char* name, const char* sig)
-	: m_methodName(name)
-	, m_methodSignature(sig)
-	, mEnv(NULL)
- 	, mInstance(NULL)
+	: mMethodName(name)
+	, mMethodSignature(sig)
  	, mCachedMethodID(NULL)
- 	, mInstanceProxy(NULL)
+	{}
+};
+
+template<class T, bool isStatic>
+class JniMethod;
+
+template<class R, typename... P, bool isStatic>
+class JniMethod<R(P...), isStatic> : public JniMethod_base {
+
+protected:
+	JniClass* mClassProxy;
+
+public:
+	JniMethod(const char* name, const char* sig)
+	: JniMethod_base(name, sig)
 	{}
 
-	JniMethod_base(JniObject* instanceProxy, const char* name, const char* sig);
-
-	
-	void setInstance(JNIEnv* env, jobject instance) {
-		mEnv = env;
-		mInstance = instance;
-	}
-
+	JniMethod(JniClass* proxy, const char* name, const char* sig)
+	: JniMethod_base(name, sig)
+	, mClassProxy(proxy)
+	{}
 
 	JNIEnv* getJNIEnv();
 	jclass getClass();
-	jobject getInstance();
 	jmethodID getMethodID();
+
+	R operator() (P... q);
+};
+
+template<class R, typename... P>
+class JniMethod<R(P...), false> : public JniMethod_base {
+protected:
+	JniObject* mInstanceProxy;
+
+public:
+	JniMethod(const char* name, const char* sig)
+	: JniMethod_base(name, sig)
+	{}
+
+	JniMethod(JniObject* proxy, const char* name, const char* sig)
+	: JniMethod_base(name, sig)
+	, mInstanceProxy(proxy)
+	{}
+
+	JNIEnv* getJNIEnv();
+	jclass getClass();
+	jmethodID getMethodID();
+
+	const jobject getInstance();
+
+	R operator() (P... q) {
+		return JniMethodInvoke(getJNIEnv(), getInstance(), getMethodID(), q...);
+	}
 
 };
 
 
 
 #define JniMethod_ACCESSORS(TYPE, NAME_FRAG) \
-template<typename... P> class JniMethod<TYPE(P...)> : public JniMethod_base { \
-	public: \
-	JniMethod(const char* name, const char* sig) : JniMethod_base(name, sig) {}; \
-	JniMethod(JniObject* proxy, const char* name, const char* sig) : JniMethod_base(proxy, name, sig) {}; \
-	TYPE operator() (P... q) { \
-		return (TYPE)getJNIEnv()->Call ## NAME_FRAG ## Method(getInstance(), getMethodID(), q...); \
-	} \
-	static TYPE invoke(JNIEnv* env, jobject instance, jmethodID methodId, P... q) { \
-		return (TYPE)env->Call ## NAME_FRAG ## Method(instance, methodId, q...); \
-	} \
-};
-
-
+template<class R, typename... P> \
+static TYPE JniMethodInvoke(JNIEnv* env, jobject inst, jmethodID method, P... q) { \
+	return (TYPE)env->Call ## NAME_FRAG ## Method(inst, method, q...); \
+} \
+template<class R, typename... P> \
+static TYPE JniMethodInvoke(JNIEnv* env, jclass clazz, jmethodID method, P... q) { \
+	return (TYPE)env->CallStatic ## NAME_FRAG ##Method(clazz, method, q...); \
+}
 
 JniMethod_ACCESSORS(void, Void)
 JniMethod_ACCESSORS(jstring, Object)
