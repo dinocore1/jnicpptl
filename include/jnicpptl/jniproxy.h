@@ -59,4 +59,45 @@ public:
 	}
 };
 
+class JniStaticProxy : public JniProxy {
+
+public:
+	JniProxy* mParentProxy;
+	jclass mClass;
+
+	JniStaticProxy()
+	: mClass(NULL)
+	{};
+
+	~JniStaticProxy() {
+		if(mClass != NULL){
+			mParentProxy->getJNIEnv()->DeleteGlobalRef(mClass);
+		}
+		mClass = NULL;
+	}
+
+	void setParent(JniProxy* proxy) {
+		mParentProxy = proxy;
+	}
+
+	virtual JNIEnv* getJNIEnv() {
+		return NULL;
+	}
+	virtual jclass getClass() {
+		return mClass;
+	}
+	virtual jobject getInstance(){
+		return NULL;
+	}
+
+	virtual void setClass(jclass clazz){
+		if(mClass != NULL){
+			mParentProxy->getJNIEnv()->DeleteGlobalRef(mClass);
+		}
+		mClass = (jclass)mParentProxy->getJNIEnv()->NewGlobalRef(clazz);
+	}
+	virtual void setInstance(jobject inst){
+	}
+};
+
 #endif /* JNIPROXY_H_ */
