@@ -66,22 +66,47 @@ public:
 	void set(JNIEnv* env, jclass obj, T value);
 };
 
-
 template<typename T, bool isStatic>
-class JniField : JniField_base<T, isStatic> {
-	typedef JniField<T, isStatic> SelfT;
+class JniField;
+
+template<typename T>
+class JniField<T, true> : JniField_base<T, true> {
+	typedef JniField<T, true> SelfT;
 
 protected:
 	JniProxy* mProxy;
 
 public:
-	JniField(const char* name, const char* signature)
-	: JniField_base<T, isStatic>(name, signature)
-	, mProxy(NULL)
+	JniField(JniProxy* proxy, const char* name, const char* sig)
+	: JniField_base<T, true>(name, sig)
+	, mProxy(proxy)
 	{}
 
+	jfieldID getFieldID();
+
+	T get();
+	void set(T t);
+
+	SelfT& operator=(const T& rhs) {
+		set(rhs);
+		return *this;
+	}
+
+	operator const T() {
+		return get();
+	}
+};
+
+template<typename T>
+class JniField<T, false> : JniField_base<T, false> {
+	typedef JniField<T, false> SelfT;
+
+protected:
+	JniProxy* mProxy;
+
+public:
 	JniField(JniProxy* proxy, const char* name, const char* sig)
-	: JniField_base<T, isStatic>(name, sig)
+	: JniField_base<T, false>(name, sig)
 	, mProxy(proxy)
 	{}
 

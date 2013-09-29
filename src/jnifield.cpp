@@ -104,10 +104,40 @@ void JniField_base<T, false>::set(JNIEnv* env, jobject obj, T value)
 
 /****** JniField *******/
 
-template<typename T, bool isStatic>
-T JniField<T, isStatic>::get()
+template<typename T>
+jfieldID JniField<T, true>::getFieldID()
+{
+	return getFieldID(mProxy->getJNIEnv(), mProxy->getClass());
+}
+
+template<typename T>
+T JniField<T, true>::get()
 {
 	return get(mProxy->getJNIEnv(), mProxy->getClass());
+}
+
+template<typename T>
+void JniField<T, true>::set(T value)
+{
+	set(mProxy->getJNIEnv(), mProxy->getClass(), value);
+}
+
+template<typename T>
+jfieldID JniField<T, false>::getFieldID()
+{
+	return getFieldID(mProxy->getJNIEnv(), mProxy->getClass());
+}
+
+template<typename T>
+T JniField<T, false>::get()
+{
+	return get(mProxy->getJNIEnv(), mProxy->getInstance());
+}
+
+template<typename T>
+void JniField<T, false>::set(T value)
+{
+	set(mProxy->getJNIEnv(), mProxy->getInstance(), value);
 }
 
 /*

@@ -6,6 +6,7 @@
 #include <jni.h>
 #include <string>
 
+class JniProxy;
 class JniClass;
 class JniObject;
 

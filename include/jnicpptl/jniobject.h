@@ -5,51 +5,45 @@
 #include <jni.h>
 #include <string>
 
+class JniProxy;
+
 
 template<class T>
 class JniObject_base {
+
 protected:
-	std::string mClassname;
-	T mInstance;
+	JniProxy* mProxy;
 
 public:
-	JniObject_base(const char* name, T instance)
-	: mClassname(name)
-	, mInstance(instance)
+	JniObject_base(JniProxy* proxy)
+	: mProxy(proxy)
 	{}
 
-	JniObject_base(const char* name)
-	: mClassname(name)
-	, mInstance(NULL)
-	{}
+	~JniObject_base();
 
-	const T get() {
-		return mInstance;
-	}
-
-	void set(const T& i) {
-		mInstance = i;
-	}
+	const T get();
+	void set(const T& value);
 
 	operator const T () {
 		return get();
-	}
-
-	JniObject_base<T>& operator= (const T& rhs) {
-		set(rhs);
-		return *this;
 	}
 };
 
 class JniClass : public JniObject_base<jclass> {
 
+friend class JniObject;
+protected:
+	std::string mClassname;
+
 public:
-	JniClass(const char* name, jclass instance)
-	: JniObject_base<jclass>(name, instance)
+	JniClass(JniProxy* proxy, const char* name)
+	: JniObject_base<jclass>(proxy)
+	, mClassname(name)
 	{}
 
 	JniClass(const char* name)
-	: JniObject_base<jclass>(name, NULL)
+	: JniObject_base<jclass>(NULL)
+	, mClassname(name)
 	{}
 };
 
@@ -59,58 +53,44 @@ protected:
 	JniClass mClass;
 
 public:
-	JniObject(const char* name, jobject instance)
-	: JniObject_base<jobject>(name, instance)
-	, mClass(name)
+	JniObject(JniProxy* proxy, const char* name)
+	: JniObject_base<jobject>(proxy)
+	, mClass(proxy, name)
 	{}
 
 	JniObject(const char* name)
-	: JniObject_base<jobject>(name, NULL)
-	, mClass(name)
+	: JniObject_base<jobject>(NULL)
+	, mClass(NULL, name)
 	{}
 
-	jclass getClass(JNIEnv* env) {
-		jclass retval = mClass.get();
-		if(retval == NULL){
-			if(mInstance != NULL) {
-				retval = env->GetObjectClass(mInstance);
-				mClass.set(retval);
-			} else {
-				retval = env->FindClass(mClassname.c_str());
-				mClass.set(retval);
-			}
-		}
-		return retval;
-	}
+	jclass getClass();
 };
 
 
-const JniObject makeJniObject(JNIEnv* env, jobject instance);
+JniObject makeJniObject(JNIEnv* env, jobject instance);
 
 
 class JniString : public JniObject_base<jstring> {
 private:
+	JniClass mClass;
 	std::string mNativeString;
 
 public:
-	JniString(JNIEnv* env, jstring str)
-	: JniObject_base("java/lang/String", str)
-	{
-		const char* buf = env->GetStringUTFChars(str, NULL);
-		mNativeString = buf;
-		env->ReleaseStringUTFChars(str, buf);
-	}
+	JniString(JniProxy* proxy)
+	: JniObject_base(proxy)
+	, mClass(proxy, "java/lang/String")
+	{}
 
-	JniString(JNIEnv* env, const char* buf)
-	: JniObject_base("java/lang/String")
+	JniString(JniProxy* proxy, const char* buf)
+	: JniObject_base(proxy)
+	, mClass(proxy, "java/lang/String")
 	, mNativeString(buf)
-	{
-		mInstance = env->NewStringUTF(buf);
-	}
+	{}
 
-	const char* getCStr() {
-		return mNativeString.c_str();
-	}
+	const jstring get();
+	void set(const jstring& value);
+
+	const char* getCStr();
 
 	operator const char*() {
 		return getCStr();
