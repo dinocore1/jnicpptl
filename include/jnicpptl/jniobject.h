@@ -7,7 +7,6 @@
 
 class JniProxy;
 
-
 template<class T>
 class JniObject_base {
 
@@ -20,6 +19,14 @@ public:
 	{}
 
 	~JniObject_base();
+
+	JniProxy* getProxy() {
+		return mProxy;
+	}
+
+	void setProxy(JniProxy* proxy) {
+		mProxy = proxy;
+	}
 
 	const T get();
 	void set(const T& value);
@@ -97,6 +104,8 @@ public:
 	}
 
 };
+
+
 
 
 

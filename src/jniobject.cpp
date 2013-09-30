@@ -115,5 +115,3 @@ JniObject makeJniObject(JNIEnv* env, jobject instance)
 	JniObject retval(proxy, className);
 	return retval;
 }
-
-
